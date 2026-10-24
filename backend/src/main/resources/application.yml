@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   application:
@@ -21,6 +21,11 @@ relay:
     expiry-hours: 24
   cors-origins: ${CORS_ORIGINS:http://localhost:*,http://127.0.0.1:*}
   upload-dir: ${UPLOAD_DIR:./uploads}
+  cloudinary:
+    # Leave blank to store photos on local disk (dev). Set all three in production.
+    cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+    api-key: ${CLOUDINARY_API_KEY:}
+    api-secret: ${CLOUDINARY_API_SECRET:}
   razorpay:
     # Leave key-id blank to run in mock mode (no real money, simulated checkout).
     key-id: ${RAZORPAY_KEY_ID:}

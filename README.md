@@ -7,7 +7,7 @@ Work orders, SLA tracking and payment orchestration. Citizens report issues, adm
 ## Run it locally (no Docker, no Postgres)
 
 ```bash
-# terminal 1: API on :8080 (needs Java 17; uses an embedded H2 file DB and seeds demo data)
+# terminal 1: API on :8080 (needs Java 25; uses an embedded H2 file DB and seeds demo data)
 cd backend && ./mvnw spring-boot:run
 
 # terminal 2: UI on :5173 (proxies /api to :8080)
