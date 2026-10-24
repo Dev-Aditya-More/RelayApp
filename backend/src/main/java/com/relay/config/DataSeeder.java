@@ -7,6 +7,7 @@ import com.relay.service.ClassifierService;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,10 +29,16 @@ public class DataSeeder implements CommandLineRunner {
     private final PasswordEncoder encoder;
     private final ClassifierService classifier;
     private final boolean demo;
+    private final String adminEmail;
+    private final String adminPassword;
+    private final String demoPassword;
 
     public DataSeeder(UserRepository users, SlaPolicyRepository policies, WorkOrderRepository orders,
                       WorkOrderEventRepository events, PaymentRepository payments, PasswordEncoder encoder,
-                      ClassifierService classifier, @Value("${relay.seed-demo-data}") boolean demo) {
+                      ClassifierService classifier, @Value("${relay.seed-demo-data}") boolean demo,
+                      @Value("${relay.admin.email}") String adminEmail,
+                      @Value("${relay.admin.password}") String adminPassword,
+                      @Value("${relay.demo-password}") String demoPassword) {
         this.users = users;
         this.policies = policies;
         this.orders = orders;
@@ -40,6 +47,9 @@ public class DataSeeder implements CommandLineRunner {
         this.encoder = encoder;
         this.classifier = classifier;
         this.demo = demo;
+        this.adminEmail = adminEmail.trim();
+        this.adminPassword = adminPassword;
+        this.demoPassword = demoPassword;
     }
 
     @Override
@@ -53,13 +63,18 @@ public class DataSeeder implements CommandLineRunner {
             policies.save(new SlaPolicy(Category.DRAINAGE, "Drainage & Sewerage", 36, 2500, 5500, 199));
             policies.save(new SlaPolicy(Category.OTHER, "General Services", 72, 500, 2000, 99));
         }
-        if (!demo || users.count() > 0) return;
+        bootstrapAdmin();
+        if (!demo) return;
+        if (demoPassword.isBlank()) {
+            log.warn("SEED_DEMO_DATA is on but DEMO_PASSWORD is not set; skipping demo data");
+            return;
+        }
+        if (users.findByEmailIgnoreCase("ravi@relay.app").isPresent()) return;
 
-        User admin = user("Relay Admin", "admin@relay.app", "admin123", Role.ADMIN);
-        User ravi = user("Ravi Constructions", "ravi@relay.app", "contractor123", Role.CONTRACTOR);
-        User meera = user("Meera Civil Works", "meera@relay.app", "contractor123", Role.CONTRACTOR);
-        User asha = user("Asha Kulkarni", "asha@relay.app", "citizen123", Role.CITIZEN);
-        User dev = user("Dev Patil", "dev@relay.app", "citizen123", Role.CITIZEN);
+        User ravi = user("Ravi Constructions", "ravi@relay.app", demoPassword, Role.CONTRACTOR, true);
+        User meera = user("Meera Civil Works", "meera@relay.app", demoPassword, Role.CONTRACTOR, true);
+        User asha = user("Asha Kulkarni", "asha@relay.app", demoPassword, Role.CITIZEN, true);
+        User dev = user("Dev Patil", "dev@relay.app", demoPassword, Role.CITIZEN, true);
 
         //   title, description, category, severity, area, lat, lng, status, ageHours, contractor, hoursToFinish, rating, citizen
         seed("Deep pothole near Karve Road signal", "Huge pothole, two-wheelers are skidding here every day.", Category.POTHOLE, Severity.HIGH, "Kothrud", 18.5074, 73.8077, Status.OPEN, 6, null, 0, 0, asha);
@@ -77,15 +92,30 @@ public class DataSeeder implements CommandLineRunner {
         // Overdue but not yet flagged: the SLA scheduler picks this one up shortly after start.
         seed("Sewage smell near apartments", "Sewer overflow near the society gate.", Category.DRAINAGE, Severity.MEDIUM, "Aundh", 18.5560, 73.8090, Status.OPEN, 40, null, 0, 0, asha);
 
-        log.info("Seeded demo data. Logins: admin@relay.app / admin123, ravi@relay.app / contractor123, asha@relay.app / citizen123");
+        log.info("Seeded demo data. Demo logins are listed for admins under People.");
     }
 
-    private User user(String name, String email, String password, Role role) {
+    /** Creates the first admin from ADMIN_EMAIL / ADMIN_PASSWORD. Never promotes an existing account. */
+    private void bootstrapAdmin() {
+        if (adminEmail.isBlank()) return;
+        if (users.findByEmailIgnoreCase(adminEmail).isPresent()) return;
+        if (adminPassword.length() < 8) {
+            log.warn("ADMIN_PASSWORD must be at least 8 characters; admin {} not created", adminEmail);
+            return;
+        }
+        user("Relay Admin", adminEmail.toLowerCase(), adminPassword, Role.ADMIN, false);
+        log.info("Created admin account {}", adminEmail);
+    }
+
+    private User user(String name, String email, String password, Role role, boolean isDemo) {
         User u = new User();
         u.setName(name);
         u.setEmail(email);
         u.setPasswordHash(encoder.encode(password));
         u.setRole(role);
+        u.setApproved(true);
+        u.setEmailVerified(true);
+        u.setDemo(isDemo);
         return users.save(u);
     }
 
@@ -129,12 +159,13 @@ public class DataSeeder implements CommandLineRunner {
         if (contractor != null) events.save(ev(w, "Relay Admin", "ASSIGNED", "Handed off to " + contractor.getName(), w.getAssignedAt()));
         if (w.getStartedAt() != null || done) events.save(ev(w, contractor.getName(), "IN_PROGRESS", "Crew on site", w.getCreatedAt().plus(Duration.ofHours(2))));
         if (done) events.save(ev(w, contractor.getName(), "COMPLETED", "Work completed", w.getCompletedAt()));
-        if (status == Status.CLOSED && contractor != null && rating >= 4) {
+        List<User> admins = users.findByRole(Role.ADMIN);
+        if (status == Status.CLOSED && contractor != null && rating >= 4 && !admins.isEmpty()) {
             Payment p = new Payment();
             p.setType(PaymentType.CONTRACTOR_PAYOUT);
             p.setStatus(PaymentStatus.PAID);
             p.setAmount(policy.getContractorRate());
-            p.setPayer(users.findByRole(Role.ADMIN).get(0));
+            p.setPayer(admins.get(0));
             p.setPayee(contractor);
             p.setWorkOrder(w);
             p.setPaidAt(w.getCompletedAt().plus(Duration.ofHours(6)));

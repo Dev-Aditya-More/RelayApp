@@ -31,6 +31,22 @@ relay:
     key-id: ${RAZORPAY_KEY_ID:}
     key-secret: ${RAZORPAY_KEY_SECRET:}
     webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:}
+  # Public URL of the frontend (used in emails), e.g. https://relay.vercel.app
+  app-url: ${APP_URL:http://localhost:5180}
+  # Sign-up sends a verification email. Turn off only if email is not set up yet.
+  require-email-verification: ${REQUIRE_EMAIL_VERIFICATION:true}
+  rate-limit:
+    enabled: ${RATE_LIMIT_ENABLED:true}
+  mail:
+    # Resend API key. Leave blank in dev: emails are printed to the server log instead.
+    resend-api-key: ${RESEND_API_KEY:}
+    from: ${MAIL_FROM:Relay <onboarding@resend.dev>}
+  # First admin, created at startup if no account has this email. Leave blank to skip.
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+  # Shared password of the seeded demo accounts (shown to admins only). Required when SEED_DEMO_DATA is on.
+  demo-password: ${DEMO_PASSWORD:}
   seed-demo-data: ${SEED_DEMO_DATA:true}
 
 ---
@@ -52,3 +68,17 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/relay}
     username: ${DB_USER:relay}
     password: ${DB_PASSWORD:relay}
+
+---
+# Zero-setup local defaults. Production profiles must set their own values.
+spring:
+  config:
+    activate:
+      on-profile: dev
+relay:
+  admin:
+    email: ${ADMIN_EMAIL:admin@relay.app}
+    password: ${ADMIN_PASSWORD:admin123}
+  demo-password: ${DEMO_PASSWORD:demo12345}
+  # Dev prints emails to the log; skip verification by default so local sign-up just works.
+  require-email-verification: ${REQUIRE_EMAIL_VERIFICATION:false}

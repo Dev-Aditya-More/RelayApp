@@ -26,6 +26,7 @@ export function AuthProvider({ children }) {
     loading,
     login: (email, password) => api.post('/auth/login', { email, password }).then(finish),
     register: (body) => api.post('/auth/register', body).then(finish),
+    refresh: () => api.get('/auth/me').then((r) => setUser(r.data)).catch(() => {}),
     logout: () => { localStorage.removeItem(TOKEN_KEY); setUser(null) },
   }), [user, loading, finish])
 

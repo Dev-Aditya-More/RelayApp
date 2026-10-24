@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { Bell, ClipboardList, LayoutDashboard, LogOut, Menu, PlusCircle, ReceiptIndianRupee, Timer, X } from 'lucide-react'
-import api from '../api'
+import { Bell, ClipboardList, LayoutDashboard, LogOut, Menu, PlusCircle, ReceiptIndianRupee, Timer, Users, X } from 'lucide-react'
+import api, { errorMessage } from '../api'
+import { useToast } from './Toast'
 import { useAuth } from '../auth'
 import { ROLE_LABEL, timeAgo } from '../utils'
 import Logo from './Logo'
@@ -52,6 +53,22 @@ function Bell_() {
   )
 }
 
+function VerifyBanner({ email }) {
+  const toast = useToast()
+  const [busy, setBusy] = useState(false)
+  const resend = async () => {
+    setBusy(true)
+    try { await api.post('/auth/resend-verification'); toast('Verification email sent') }
+    catch (e) { toast(errorMessage(e), 'err') } finally { setBusy(false) }
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-baton/30 bg-baton-50 px-4 py-3 text-sm font-medium text-baton-600 lg:px-8">
+      <span>Verify your email to report issues or receive work. We sent a link to <b>{email}</b>.</span>
+      <button className="font-bold underline disabled:opacity-60" onClick={resend} disabled={busy}>{busy ? 'Sending…' : 'Resend email'}</button>
+    </div>
+  )
+}
+
 export default function Layout() {
   const { user, logout } = useAuth()
   const [menu, setMenu] = useState(false)
@@ -63,6 +80,7 @@ export default function Layout() {
     { to: '/orders', label: user.role === 'CITIZEN' ? 'My reports' : 'Work orders', Icon: ClipboardList },
     { to: '/payments', label: 'Payments', Icon: ReceiptIndianRupee },
     { to: '/sla', label: 'SLA policies', Icon: Timer },
+    ...(user.role === 'ADMIN' ? [{ to: '/people', label: 'People', Icon: Users }] : []),
   ]
 
   const sidebar = (
@@ -98,6 +116,12 @@ export default function Layout() {
           <p className="hidden text-sm font-medium text-ink-500 lg:block">Every fix is a hand-off. Keep the baton moving.</p>
           <Bell_ />
         </header>
+        {!user.emailVerified && <VerifyBanner email={user.email} />}
+        {user.role === 'CONTRACTOR' && !user.approved && (
+          <div className="border-b border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 lg:px-8">
+            Your contractor account is awaiting admin approval. You can sign in, but you won't receive work orders until you're approved.
+          </div>
+        )}
         <main className="mx-auto max-w-6xl px-4 py-6 lg:px-8 lg:py-8"><Outlet /></main>
       </div>
     </div>

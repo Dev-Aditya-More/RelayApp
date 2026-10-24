@@ -10,11 +10,23 @@ public final class Dtos {
     private Dtos() {}
 
     public record RegisterReq(@NotBlank String name, @Email @NotBlank String email,
-                              @Size(min = 6) String password, String phone, Role role) {}
+                              @Size(min = 8, message = "Password must be at least 8 characters") String password, String phone, Role role) {}
+
+    public record VerifyEmailReq(@NotBlank String token) {}
+
+    public record ForgotReq(@Email @NotBlank String email) {}
+
+    public record ResetReq(@NotBlank String token,
+                           @Size(min = 8, message = "Password must be at least 8 characters") String password) {}
 
     public record LoginReq(@NotBlank String email, @NotBlank String password) {}
 
-    public record UserView(Long id, String name, String email, Role role, String phone) {}
+    public record UserView(Long id, String name, String email, Role role, String phone,
+                           boolean approved, boolean suspended, boolean emailVerified, Instant createdAt) {}
+
+    public record UserUpdateReq(Role role, Boolean approved, Boolean suspended) {}
+
+    public record DemoAccount(String name, String email, Role role, String password) {}
 
     public record AuthRes(String token, UserView user) {}
 

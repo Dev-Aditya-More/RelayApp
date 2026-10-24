@@ -33,9 +33,8 @@ public class JwtService {
                 .compact();
     }
 
-    /** Returns the user id encoded in the token, or throws if invalid/expired. */
-    public Long userIdFrom(String token) {
-        Claims claims = Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
-        return Long.valueOf(claims.getSubject());
+    /** Verifies the token and returns its claims, or throws if invalid/expired. */
+    public Claims parse(String token) {
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload();
     }
 }

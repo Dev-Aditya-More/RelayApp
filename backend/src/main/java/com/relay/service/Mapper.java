@@ -18,7 +18,8 @@ public class Mapper {
     }
 
     public UserView view(User u) {
-        return u == null ? null : new UserView(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getPhone());
+        return u == null ? null : new UserView(u.getId(), u.getName(), u.getEmail(), u.getRole(), u.getPhone(),
+                u.isApprovedAccount(), u.isSuspendedAccount(), u.isEmailVerifiedAccount(), u.getCreatedAt());
     }
 
     public WorkOrderView view(WorkOrder w) {

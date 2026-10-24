@@ -5,7 +5,10 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import io.jsonwebtoken.Claims;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -29,8 +32,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String header = req.getHeader("Authorization");
         if (header != null && header.startsWith("Bearer ")) {
             try {
-                Long id = jwt.userIdFrom(header.substring(7));
-                users.findById(id).ifPresent(u -> SecurityContextHolder.getContext().setAuthentication(
+                Claims claims = jwt.parse(header.substring(7));
+                Long id = Long.valueOf(claims.getSubject());
+                Instant issued = claims.getIssuedAt().toInstant();
+                users.findById(id)
+                        .filter(u -> !u.isSuspendedAccount())
+                        .filter(u -> u.getPasswordChangedAt() == null
+                                || !issued.isBefore(u.getPasswordChangedAt().truncatedTo(ChronoUnit.SECONDS)))
+                        .ifPresent(u -> SecurityContextHolder.getContext().setAuthentication(
                         new UsernamePasswordAuthenticationToken(u, null,
                                 List.of(new SimpleGrantedAuthority("ROLE_" + u.getRole().name())))));
             } catch (Exception ignored) {

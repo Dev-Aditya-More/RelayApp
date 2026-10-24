@@ -41,6 +41,8 @@ public class WorkOrderService {
 
     public WorkOrderView create(User citizen, String title, String description, Category category, Severity severity,
                                 String area, String address, Double lat, Double lng, MultipartFile photo) {
+        if (!citizen.isEmailVerifiedAccount())
+            throw ApiException.forbidden("Verify your email before reporting an issue. Check your inbox for the link.");
         Suggestion hint = classifier.classify(title + " " + description);
         WorkOrder wo = new WorkOrder();
         wo.setTitle(title.trim());
@@ -88,6 +90,8 @@ public class WorkOrderService {
             throw ApiException.bad("Only open work orders can be (re)assigned");
         User c = users.findById(contractorId).filter(u -> u.getRole() == Role.CONTRACTOR)
                 .orElseThrow(() -> ApiException.bad("Choose a valid contractor"));
+        if (!c.isApprovedAccount() || c.isSuspendedAccount() || !c.isEmailVerifiedAccount())
+            throw ApiException.bad(c.getName() + " is not an approved contractor");
         wo.setContractor(c);
         wo.setStatus(Status.ASSIGNED);
         wo.setAssignedAt(Instant.now());

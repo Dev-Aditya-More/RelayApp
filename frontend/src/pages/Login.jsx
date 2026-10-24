@@ -1,19 +1,15 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import PasswordInput from '../components/PasswordInput'
 import { ArrowRight } from 'lucide-react'
 import { errorMessage } from '../api'
 import { useAuth } from '../auth'
 import Logo, { Baton } from '../components/Logo'
 
-const DEMOS = [
-  { label: 'Citizen', email: 'asha@relay.app', password: 'citizen123' },
-  { label: 'Contractor', email: 'ravi@relay.app', password: 'contractor123' },
-  { label: 'Admin', email: 'admin@relay.app', password: 'admin123' },
-]
-
 export default function Login() {
   const { user, login, register } = useAuth()
   const nav = useNavigate()
+  const notice = useLocation().state?.notice
   const [mode, setMode] = useState('login')
   const [form, setForm] = useState({ name: '', email: '', password: '', phone: '', role: 'CITIZEN' })
   const [error, setError] = useState('')
@@ -61,18 +57,6 @@ export default function Login() {
           <h2 className="text-3xl font-extrabold">{mode === 'login' ? 'Welcome back' : 'Join the relay'}</h2>
           <p className="mt-1 text-ink-500">{mode === 'login' ? 'Sign in to pick up where you left off.' : 'Create an account to report or deliver fixes.'}</p>
 
-          {mode === 'login' && (
-            <div className="mt-6">
-              <p className="label">Try a demo account</p>
-              <div className="flex gap-2">
-                {DEMOS.map((d) => (
-                  <button key={d.label} type="button" onClick={() => setForm({ ...form, email: d.email, password: d.password })}
-                    className="btn-ghost flex-1 !px-2 !py-2 text-xs">{d.label}</button>
-                ))}
-              </div>
-            </div>
-          )}
-
           <form onSubmit={submit} className="mt-6 space-y-4">
             {mode === 'register' && (
               <>
@@ -87,11 +71,19 @@ export default function Login() {
                       </button>
                     ))}
                   </div>
+                  {form.role === 'CONTRACTOR' && <p className="mt-2 text-xs text-ink-500">Contractor accounts are reviewed by a Relay admin before you can receive work orders.</p>}
                 </div>
               </>
             )}
             <div><label className="label">Email</label><input className="input" type="email" required value={form.email} onChange={set('email')} /></div>
-            <div><label className="label">Password</label><input className="input" type="password" required minLength={6} value={form.password} onChange={set('password')} /></div>
+            <div>
+              <div className="flex items-baseline justify-between">
+                <label className="label">Password</label>
+                {mode === 'login' && <Link to="/forgot-password" className="mb-1.5 text-xs font-bold text-baton-600 hover:underline">Forgot password?</Link>}
+              </div>
+              <PasswordInput required minLength={mode === 'register' ? 8 : undefined} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={form.password} onChange={set('password')} />
+            </div>
+            {notice && !error && <p className="rounded-xl bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">{notice}</p>}
             {error && <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-medium text-rose-700">{error}</p>}
             <button className="btn-primary w-full" disabled={busy}>{busy ? 'One moment…' : mode === 'login' ? 'Sign in' : 'Create account'}<ArrowRight size={16} /></button>
           </form>

@@ -39,7 +39,8 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/contractors")
-    List<UserView> contractors() { return users.findByRole(Role.CONTRACTOR).stream().map(mapper::view).toList(); }
+    List<UserView> contractors() { return users.findByRole(Role.CONTRACTOR).stream()
+            .filter(u -> u.isApprovedAccount() && !u.isSuspendedAccount() && u.isEmailVerifiedAccount()).map(mapper::view).toList(); }
 
     @GetMapping("/sla-policies")
     List<PolicyView> policies() { return policies.findAll().stream().map(mapper::view).toList(); }
