@@ -1,0 +1,34 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { useAuth } from './auth'
+import Layout from './components/Layout'
+import { Spinner } from './components/Bits'
+import Login from './pages/Login'
+import Dashboard from './pages/Dashboard'
+import Orders from './pages/Orders'
+import OrderDetail from './pages/OrderDetail'
+import Report from './pages/Report'
+import Payments from './pages/Payments'
+import Sla from './pages/Sla'
+
+function Protected({ children }) {
+  const { user, loading } = useAuth()
+  if (loading) return <Spinner />
+  return user ? children : <Navigate to="/login" replace />
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route element={<Protected><Layout /></Protected>}>
+        <Route index element={<Dashboard />} />
+        <Route path="orders" element={<Orders />} />
+        <Route path="orders/:id" element={<OrderDetail />} />
+        <Route path="report" element={<Report />} />
+        <Route path="payments" element={<Payments />} />
+        <Route path="sla" element={<Sla />} />
+      </Route>
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
+  )
+}

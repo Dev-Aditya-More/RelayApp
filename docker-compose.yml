@@ -1,0 +1,31 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: relay
+      POSTGRES_USER: relay
+      POSTGRES_PASSWORD: relay
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  backend:
+    build: ./backend
+    depends_on: [db]
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_URL: jdbc:postgresql://db:5432/relay
+      DB_USER: relay
+      DB_PASSWORD: relay
+      JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-string-before-deploying}
+      RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
+      RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
+      RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
+    volumes: [uploads:/app/uploads]
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    ports: ["8081:80"]
+
+volumes:
+  pgdata:
+  uploads:
