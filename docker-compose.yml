@@ -16,6 +16,18 @@ services:
       DB_USER: relay
       DB_PASSWORD: relay
       JWT_SECRET: ${JWT_SECRET:-change-this-to-a-long-random-string-before-deploying}
+      # Local-only defaults so a fresh `docker compose up` has an admin and demo data. Override in a .env file.
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@relay.app}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin12345}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-demo12345}
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      REQUIRE_EMAIL_VERIFICATION: ${REQUIRE_EMAIL_VERIFICATION:-false}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-Relay <onboarding@resend.dev>}
+      APP_URL: ${APP_URL:-http://localhost:8081}
       RAZORPAY_KEY_ID: ${RAZORPAY_KEY_ID:-}
       RAZORPAY_KEY_SECRET: ${RAZORPAY_KEY_SECRET:-}
       RAZORPAY_WEBHOOK_SECRET: ${RAZORPAY_WEBHOOK_SECRET:-}
